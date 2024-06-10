@@ -81,13 +81,13 @@ def initial_autoplay(env):
     
 if __name__=='__main__':
     device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("-m", "--model", required=True, help="Model file to load")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--model", required=True, help="Model file to load")
     
     env = game.GameState()
-    # args = parser.parse_args()
+    args = parser.parse_args()
     net = DQN( (STATE_DIM,84,84), 2 ).to(device)
-    net.load_state_dict(torch.load('checkpoints/best_DQN.dat'))
+    net.load_state_dict(torch.load(args.model))
     
     input("Please Press Enter to Start")
     state = initial_autoplay(env)

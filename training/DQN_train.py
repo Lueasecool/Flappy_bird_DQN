@@ -315,18 +315,19 @@ while game_id < EPOCHS_MAX:
     epsilon = max( EPSILON_FINAL , EPSILON_START - game_id/EPSILON_DECAY_FRAMES )
     # take action
     reward = agent.step(net,0,epsilon,device=device)
+   
     if reward != 0: # when die or overcome obstacles
         game_id += 1
         total_rewards.append(reward)
         mean_reward = np.mean(total_rewards[-100:]) # get mean reward from the last 100 reward changes
-
+        writer.add_scalar('DQN_reward',mean_reward,game_id)
         if game_id%10 == 0:
             print("GAME : {} | EPSILON : {:.4f} | MEAN REWARD : {}".format( game_id, epsilon, mean_reward ))
         if best_mean_reward < mean_reward:  # save best_mean_reward
             best_mean_reward = mean_reward
             
             if best_mean_reward - last_mean >= 0.1: # save last mean_reward and model parameter when mean_reward increase by at least 0.1
-                torch.save(net.state_dict(),'checkpoints/best_DQN.dat')
+                torch.save(net.state_dict(),'checkpoints/new/best_DQN.dat')
                 print("REWARD {} -> {}. Model Saved".format(last_mean,mean_reward))
                 last_mean = best_mean_reward
         # Stop training when achieve the set target number
@@ -340,7 +341,7 @@ while game_id < EPOCHS_MAX:
     optimizer.zero_grad()
     batch = buffer.sample(BATCH_SIZE)   # get sample with BATCH_SIZE buffers
     loss_t = calc_loss_DQN(batch,net,device=device) # Using calc_loss_DQN with DQN
-    writer.add_scalar('scalar/DQN', loss_t, game_id)
+    writer.add_scalar('DQN_loss', loss_t, game_id)
     all_losses.append(float(loss_t))
     all_epsilons.append(float(epsilon))
     all_rewards.append(mean_reward)
@@ -353,17 +354,17 @@ dict = {'Loss': all_losses, 'Epsilon': all_epsilons, 'Reward': all_rewards}
 # saving the dataframe
 df = pd.DataFrame(dict)
 # save to .csv
-df.to_csv('log/my_DQN.csv')
+df.to_csv('log2/my_DQN.csv')
 
 plt.title("Loss of DQN")
 plt.xlabel("Epochs")
 plt.ylabel("Loss")
 plt.plot(all_losses)
-plt.savefig('log/my_Loss_DQN.png')
+plt.savefig('log2/my_Loss_DQN.png')
 
 plt.title("Rewards of DQN")
 plt.xlabel("Epochs")
 plt.ylabel("Rewards")
 plt.plot(all_rewards)
-plt.savefig('log/my_Reward_DQN.png')
+plt.savefig('log2/my_Reward_DQN.png')
 

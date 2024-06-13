@@ -16,8 +16,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
+from tensorboardX import SummaryWriter
 
+device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
+writer = SummaryWriter(log_dir='scalar3')
 # Action of Agent
 ACTIONS = [0,1]
 # Size of buffer experience
@@ -287,13 +289,14 @@ while game_id < EPOCHS_MAX:
         game_id += 1
         total_rewards.append(reward)
         mean_reward = np.mean(total_rewards[-100:])
+        writer.add_scalar('Dueling_DQN_reward',mean_reward,game_id)
         if game_id%5 == 0:
             print("GAME : {} | EPSILON : {:.4f} | MEAN REWARD : {}".format( game_id, epsilon, mean_reward ))
         if best_mean_reward < mean_reward:
             best_mean_reward = mean_reward
             
             if best_mean_reward - last_mean >= 0.1:
-                torch.save(net.state_dict(),'checkpoints/best_DuelingDQN_PER.dat')
+                torch.save(net.state_dict(),'checkpoints/new/best_DuelingDQN_PER.dat')
                 print("REWARD {} -> {}. Model Saved".format(last_mean,mean_reward))
                 last_mean = best_mean_reward
 
@@ -310,12 +313,13 @@ while game_id < EPOCHS_MAX:
     optimizer.zero_grad()
     batch = buffer.sample(BATCH_SIZE)
     loss_t = calc_loss_DDQN(batch,net,tgt_net,device=device)    # Using calc_loss_DDQN with DDQN
+    writer.add_scalar('Dueling_DQN_loss', loss_t, game_id)
     all_losses.append(float(loss_t))
     all_epsilons.append(float(epsilon))
     all_rewards.append(mean_reward)
     loss_t.backward()
     optimizer.step()
-
+writer.close()
 # dictionary of lists
 dict = {'Loss': all_losses, 'Epsilon': all_epsilons, 'Reward': all_rewards}
 # saving the dataframe

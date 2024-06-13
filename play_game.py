@@ -78,7 +78,42 @@ def initial_autoplay(env):
     frame = processFrame(image)
     state.append(frame)
     return state
+class DDQN(nn.Module):
+    def __init__(self,input_shape,nactions):
+        super(DDQN,self).__init__()
+        self.nactions = nactions
+        self.conv = nn.Sequential(
+            nn.Conv2d(input_shape[0],32,kernel_size=4,stride=2),
+            nn.ReLU(),
+            nn.Conv2d(32,64,kernel_size=3,stride=2),
+            nn.ReLU(),
+            nn.Conv2d(64,64,kernel_size=2,stride=1),
+            nn.ReLU()
+        )
+        
+        conv_out_size = self._get_conv_out(input_shape)
+        
+        self.fca = nn.Sequential(
+            nn.Linear( conv_out_size, 512),
+            nn.ReLU(),
+            nn.Linear( 512, nactions )
+        )
+        
+        self.fcv = nn.Sequential(
+            nn.Linear(conv_out_size,512),
+            nn.ReLU(),
+            nn.Linear(512,1)
+        )
+        
+    def _get_conv_out(self,shape):
+        o = self.conv( torch.zeros(1,*shape) )
+        return int(np.prod(o.size()))
     
+    def forward(self,x):
+        conv_out = self.conv(x).view(x.size()[0], -1)
+        action_v = self.fca(conv_out)
+        value_v = self.fcv(conv_out).expand(x.size(0), self.nactions)
+        return value_v + action_v - action_v.mean(1).unsqueeze(1).expand(x.size(0), self.nactions)   
 if __name__=='__main__':
     device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
     parser = argparse.ArgumentParser()
@@ -86,7 +121,7 @@ if __name__=='__main__':
     
     env = game.GameState()
     args = parser.parse_args()
-    net = DQN( (STATE_DIM,84,84), 2 ).to(device)
+    net = DDQN( (STATE_DIM,84,84), 2 ).to(device)
     net.load_state_dict(torch.load(args.model))
     
     input("Please Press Enter to Start")

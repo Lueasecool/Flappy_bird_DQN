@@ -121,7 +121,7 @@ if __name__=='__main__':
     
     env = game.GameState()
     args = parser.parse_args()
-    net = DDQN( (STATE_DIM,84,84), 2 ).to(device)
+    net = DQN( (STATE_DIM,84,84), 2 ).to(device)
     net.load_state_dict(torch.load(args.model))
     
     input("Please Press Enter to Start")
